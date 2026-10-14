@@ -1,0 +1,30 @@
+name: Update Discord logo
+
+on:
+  schedule:
+    - cron: '0 */1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch current avatar from Lanyard
+        run: |
+          ID=1454733327822225470
+          HASH=$(curl -sf "https://api.lanyard.rest/v1/users/$ID" | jq -r '.data.discord_user.avatar')
+          if [ -n "$HASH" ] && [ "$HASH" != "null" ]; then
+            curl -sfL "https://cdn.discordapp.com/avatars/$ID/$HASH.png?size=256" -o logo.png
+          fi
+
+      - name: Commit if the logo changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          [ -f logo.png ] && git add logo.png
+          git diff --cached --quiet || (git commit -m "chore: update Discord logo" && git push)
